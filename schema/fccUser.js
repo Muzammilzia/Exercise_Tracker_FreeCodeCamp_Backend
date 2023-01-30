@@ -6,7 +6,7 @@ const fccUser = new Schema({
         type: String,
         required: [true, "username is required"],
     },
-    logs: [{
+    log: [{
         description: {
             type: String,
         },

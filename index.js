@@ -14,7 +14,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/users', async (req, res) => {
-  const users = await fccUser.find().select({logs: 0});
+  const users = await fccUser.find().select({ logs: 0 });
   res.send(users)
 })
 
@@ -24,7 +24,7 @@ app.post('/api/users', async (req, res) => {
     user.save().then(response => {
       res.json({
         _id: response._id,
-        username: response.username 
+        username: response.username
       })
     })
   } catch (error) {
@@ -37,13 +37,13 @@ app.post('/api/users', async (req, res) => {
 
 app.post('/api/users/:_id/exercises', async (req, res) => {
   console.log(req.params._id)
-  const user = await fccUser.findOne({_id: req.params._id});
+  const user = await fccUser.findOne({ _id: req.params._id });
   console.log(user)
-  if(!user){
-    res.json({error: 'invalid user'})
-  }else{
+  if (!user) {
+    res.json({ error: 'invalid user' })
+  } else {
     let date = new Date(req.body.date)
-    if(date == "Invalid Date"){
+    if (date == "Invalid Date") {
       date = new Date()
     }
     const obj = {}
@@ -51,14 +51,14 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
     obj.duration = req.body.duration || user.duration;
     obj.date = date;
 
-    user.logs.push(obj)
+    user.log.push(obj)
 
     user.save().then(response => {
       res.json({
         _id: user._id,
         username: user.username,
         date: date.toDateString(),
-        duration: req.body.duration,
+        duration: Number(req.body.duration),
         description: req.body.description,
       })
     })
@@ -66,22 +66,37 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 })
 
 app.get('/api/users/:_id/logs/', async (req, res) => {
-  console.log(req.query.limit)
-  console.log(req.query.from)
-  console.log(req.query.to)
-  const user = await fccUser.findOne({_id: req.params._id});
-  const arr = user.logs.map((item, index) => {
-    let obj = item._doc
+  let i = 0
+  const user = await fccUser.findOne({ _id: req.params._id });
+  const arr = user.log.map((item, index) => {
+    let { _id, ...obj } = item._doc
     return {
       ...obj,
       date: item.date.toDateString()
+    }
+  }).filter((item, index) => {
+    if (Number(req.query.limit) <= i) {
+      return false
+    };
+    if (!req.query.from && !req.query.to) {
+      i++
+      return true
+    };
+    const itemDate = new Date(item.date)
+    const fromDate = new Date(req.query.from)
+    const toDate = new Date(req.query.to)
+    if (itemDate.getTime() > fromDate.getTime() && itemDate.getTime() < toDate.getTime()) {
+      i++
+      return true
+    } else {
+      return false
     }
   })
   res.json({
     _id: user._id,
     username: user.username,
     count: arr.length,
-    logs: arr
+    log: arr
   })
 })
 
